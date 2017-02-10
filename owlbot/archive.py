@@ -49,14 +49,16 @@ def make_resp_dummy(resp):
     temp = [
         bytes("HTTP/1.1 {} {}".format(resp.status_code, RESPONSES[resp.status_code]), "ascii"),
     ]
+    applied_keys = []
     for key in resp.headers:
-        if key in ["transfer-encoding"]:
+        if key.lower() in ["transfer-encoding", "content-encoding"]:
             continue
-        elif key == "content-length" and resp.headers["content-length"] != str(len(body)):
+        elif key.lower() == "content-length" and resp.headers["content-length"] != str(len(body)):
             # recalculate decoded size below
             continue
         temp.append(bytes("{}: {}".format(key, resp.headers[key]), "utf-8"))
-    if "content-length" not in resp.headers:
+        applied_keys.append(key.lower())
+    if "content-length" not in applied_keys:
         temp.append(bytes("content-length: {}".format(len(body)), "ascii"))
     temp.append(b"")
     temp.append(body)
