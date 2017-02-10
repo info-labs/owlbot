@@ -45,13 +45,13 @@ def make_req_dummy(req, record):
 
 
 def make_resp_dummy(resp):
-    body = resp.content
+    body = resp.raw.read()
     temp = [
         bytes("HTTP/1.1 {} {}".format(resp.status_code, RESPONSES[resp.status_code]), "ascii"),
     ]
     applied_keys = []
     for key in resp.headers:
-        if key.lower() in ["transfer-encoding", "content-encoding"]:
+        if key.lower() in ["transfer-encoding"]:
             continue
         elif key.lower() == "content-length" and resp.headers["content-length"] != str(len(body)):
             # recalculate decoded size below
