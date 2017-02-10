@@ -1,0 +1,3 @@
+[submodule "warc"]
+	path = warc
+	url = https://github.com/erroneousboat/warc3
