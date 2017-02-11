@@ -1,3 +1,7 @@
+import os
+
+os.environ["OWLBOT_POLICY"] = "http://example.com/dummy/policy"
+
 from owlbot import __version__, __description__, __license__
 
 try:
