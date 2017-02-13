@@ -5,8 +5,10 @@ Archive bot
 
 ### requirements
 
-* warc3
+* [warc3]
 * requests
+
+[warc3]: https://github.com/erroneousboat/warc3
 
 ### Usage
 
