@@ -19,6 +19,7 @@ import warc
 
 from . import robot
 from . import useragent
+from . import version
 
 
 def make_req_dummy(req, record):

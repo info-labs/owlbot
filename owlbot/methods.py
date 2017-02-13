@@ -2,7 +2,7 @@ from . import archive
 from . import useragent
 
 
-def set_policy(headers):
+def set_policy(headers, comment):
     """
     set policy URL if not set
     :type headers: dict of (str, str)
@@ -24,6 +24,6 @@ def get(url, headers={}, comment=None):
     :rtype: int, warc.WARCRecord, warc.WARCRecord
     :return: status_code, response, request
     """
-    headers = set_policy(headers)
+    headers = set_policy(headers, comment=comment)
     # create response and request record
     return archive.download("GET", url, headers)
