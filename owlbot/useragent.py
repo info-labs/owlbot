@@ -9,12 +9,23 @@ BASE_DIR = os.path.dirname(__file__)
 
 POLICY = None
 
-if "OWLBOT_POLICY" in os.environ:
-    POLICY = os.environ["OWLBOT_POLICY"]
+def load_policy(path):
+    global POLICY
+    POLICY = "".join(open(path).read().strip().split())
 
-__POLICY_FILE = os.path.join(BASE_DIR, ".OWLBOT_POLICY")
-if os.path.exists(__POLICY_FILE):
-    POLICY = "".join(open(__POLICY_FILE).read().strip().split())
+path = os.path.join(BASE_DIR, ".OWLBOT_POLICY")
+if os.path.exists(path):
+    load_policy(path)
+else:
+    path = os.path.expanduser("~/.OWLBOT_POLICY")
+    if os.path.exists(path):
+        load_policy(path)
+del path
+
+# overwrite environ
+if "OWLBOT_POLICY" in os.environ:
+    global POLICY
+    POLICY = os.environ["OWLBOT_POLICY"]
 
 if POLICY is None:
     raise RuntimeError("OWLBOT_POLICY does't set.")

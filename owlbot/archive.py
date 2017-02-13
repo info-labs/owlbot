@@ -12,9 +12,13 @@ try:
 except ImportError:
     from urlparse import urlparse
 
+import io
+import uuid
+
 import warc
 
 from . import robot
+from . import useragent
 
 
 def make_req_dummy(req, record):
@@ -73,7 +77,44 @@ def make_resp_dummy(resp):
 make_req_record = make_req_dummy
 
 
+def create(filename, fileobj=None, operator=None):
+    """
+    :rtype: warc.WARCFile
+    """
+    assert useragent.POLICY is not None
+
+    if fileobj is None:
+        fileobj = io.BytesIO()
+
+    arc = warc.WARCFile(fileobj=fileobj)
+
+    header = warc.WARCHeader({
+        "WARC-Type": "warcinfo",
+        "WARC-Filename": filename,
+    })
+    body = [
+        b"software: owlbot/"+bytes(version.STR, "ascii"),
+        b"format: WARC File Format 1.0",
+        # policy from .OWLBOT_POLICY or os.environ["OWLBOT_POLICY"]
+        b"robots: " + bytes(useragent.POLICY, "ascii"),
+    ]
+    if operator is not None:
+        body.append(b"operator: " + operator.encode("utf-8"))
+
+    arc.write_record(warc.WARCRecord(header, payload=b"\r\n".join(body)))
+
+    return arc
+
+
 def download(method, url, headers={}, data=None):
+    """
+    :type method: str
+    :type url: str
+    :type headers: dict of (str, str)
+    :type data: bytes
+    :rtype: int, warc.WARCRecord, warc.WARCRecord
+    :return: status_code, response, request
+    """
     resp = robot.download(method, url, headers, data)
     response = make_resp_dummy(resp)
     return resp.status_code, response, make_req_dummy(resp.request, response)
