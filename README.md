@@ -26,12 +26,12 @@ import owlbot
 # create WARCFile
 filename = "example.warc.gz"
 fp = io.BytesIO()
-warcfile = owlbot.create(filename, fp=fp)
+arc = owlbot.Archvie(filename, fp=fp)
 
 # crawl & archive web page
-code, response, request = owlbot.get("http://example.com/")
-warcfile.write_record(response)
-warcfile.write_record(request)
+links = arc.get("http://example.com/")
+for link in links:
+    arc.get(link)
 
 # compress data
 fp.seek(0)
