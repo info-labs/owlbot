@@ -22,13 +22,19 @@ from . import useragent
 from . import version
 
 
-def make_req_dummy(req, record):
+HTTP_VERSION = {
+    10: "1.0",
+    11: "1.1",
+}
+
+
+def make_req_dummy(req, record, http_ver="1.1"):
     o = urlparse(req.url)
     path = o.path
     if not path:
         path = "/"
     temp = [
-        bytes("{} {} HTTP/1.1".format(req.method, path), "ascii")
+        bytes("{} {} HTTP/{}".format(req.method, path, http_ver), "ascii")
     ]
     for key in req.headers:
         temp.append(bytes("{}: {}".format(key, req.headers[key]), "utf-8"))
@@ -49,10 +55,10 @@ def make_req_dummy(req, record):
     return warc.WARCRecord(header, payload=dummy)
 
 
-def make_resp_dummy(resp):
+def make_resp_dummy(resp, http_ver="1.1"):
     body = resp.raw.read()
     temp = [
-        bytes("HTTP/1.1 {} {}".format(resp.status_code, RESPONSES[resp.status_code]), "ascii"),
+        bytes("HTTP/{} {} {}".format(http_ver, resp.status_code, RESPONSES[resp.status_code]), "ascii"),
     ]
     applied_keys = []
     for key in resp.headers:
@@ -117,5 +123,8 @@ def download(method, url, headers={}, data=None):
     :return: status_code, response, request
     """
     resp = robot.download(method, url, headers, data)
-    response = make_resp_dummy(resp)
-    return resp.status_code, response, make_req_dummy(resp.request, response)
+    ver = HTTP_VERSION[resp.raw.version]
+    response = make_resp_dummy(resp, http_ver=ver)
+    return (resp.status_code,
+            response,
+            make_req_dummy(resp.request, response, http_ver=ver))
