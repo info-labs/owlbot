@@ -2,5 +2,6 @@
 
 MAJOR = 0
 MINOR = 1
+REVISION = 1
 
-STR = "{}.{}".format(MAJOR, MINOR)
+STR = "{}.{}.{}".format(MAJOR, MINOR, REVISION)

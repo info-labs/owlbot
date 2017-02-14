@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from .archive import create
-from .methods import get
+from .archive import Archive
 from . import version
 
 
