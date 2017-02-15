@@ -1,12 +1,28 @@
 import datetime
+from urllib.parse import urlparse
 
 import dns.resolver
 
+from .utility import robotparser
+
 
 class Context:
-    def __init__(self):
+    def __init__(self, botname):
+        self.botname = botname
         self.resolver = dns.resolver.Resolver()
         self.dns_cache = {}
+        self.robots_cache = {}
+
+    def has_robots_txt(self, host):
+        return host in self.robots_cache
+
+    def register_robots_txt(self, host, code, content):
+        self.robots_cache[host] = robotparser.RobotFileParser(code, content)
+
+    def can_fetch(self, url):
+        o = urlparse(url)
+        robots = self.robots_cache[o.hostname]
+        return robots.can_fetch(self.botname, url)
 
     def resolve_dns(self, host):
         """

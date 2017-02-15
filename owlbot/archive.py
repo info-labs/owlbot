@@ -14,12 +14,15 @@ except ImportError:
 
 import datetime
 import io
+import gzip
 import uuid
 
+import dns
 import warc
 
 from . import analyzer
 from . import context
+from . import exceptions
 from . import robot
 from . import useragent
 from . import version
@@ -89,9 +92,48 @@ def make_resp_dummy(resp, date, http_ver="1.1"):
 make_req_record = make_req_dummy
 
 
+class Response:
+    def __init__(self, resp, response, request):
+        self.resp = resp
+        self.response = response
+        self.request = request
+
+    def links(self):
+        if not self.resp.headers["Content-Type"].startswith("text/html"):
+            return []
+        return analyzer.extract_document_link(self.resp)
+
+    @property
+    def code(self):
+        return self.resp.status_code
+
+    @property
+    def content(self):
+        if self.resp.status_code != 200:
+            return b""
+
+        if "Content-Type" not in self.resp.headers:
+            return b""
+
+        if "Content-Encoding" in self.resp.headers:
+            encoding = self.resp.headers["Content-Encoding"]
+            if encoding not in ["gzip"]:
+                return []
+            if encoding == "gzip":
+                try:
+                    return gzip.decompress(text)
+                except:
+                    # unknown decode error
+                    return b""
+            else:
+                return b""
+        return self.resp.raw.data
+
+
 class Archive:
-    def __init__(self, filename, fileobj=None, operator=None):
-        self.ctx = context.Context()
+    def __init__(self, filename, fileobj=None, operator=None, botname="owlbot"):
+        self.botname = botname
+        self.ctx = context.Context(self.botname)
         self.create(filename, fileobj=fileobj, operator=operator)
 
     def create(self, filename, fileobj=None, operator=None):
@@ -123,6 +165,14 @@ class Archive:
             warc.WARCRecord(header, payload=b"\r\n".join(body))
         )
 
+    def can_fetch(self, url):
+        o = urlparse(url)
+        if not self.ctx.has_robots_txt(o.hostname):
+            robots_url = "http://{}/robots.txt".format(o.hostname)
+            resp = self.get(robots_url, force=True)
+            self.ctx.register_robots_txt(o.hostname, resp.code, resp.content)
+        return self.ctx.can_fetch(url)
+
     def resolve_dns(self, hostname, date):
         ttl = self.ctx.check_ttl(hostname)
         cache = self.ctx.resolve_dns(hostname)
@@ -148,11 +198,14 @@ class Archive:
             temp += [x for x in anser.items if x.rdtype == dns.rdatatype.A]
         return str(secrets.choice(temp))
 
-    def request(self, method, url, headers={}, data=None):
+    def request(self, method, url, headers={}, data=None, force=False):
         now = datetime.datetime.utcnow()
 
         o = urlparse(url)
         ip_addr = self.resolve_dns(o.hostname, date=now)
+
+        if not force and not self.can_fetch(url):
+            raise exceptions.RobotstxtDisallowed()
 
         # TODO: request with ip_addr
         resp = robot.request(method, url, headers, data)
@@ -163,11 +216,9 @@ class Archive:
         self.warc.write_record(response)
         self.warc.write_record(request)
 
-        links = analyzer.extract_document_link(resp)
+        return Response(resp, response, request)
 
-        return links
-
-    def get(self, url, headers={}, comment=None):
+    def get(self, url, headers={}, comment=None, force=False):
         """
         :type url: str
         :type headers: dict of (str, str)
@@ -177,7 +228,7 @@ class Archive:
         """
         headers = self.set_policy(headers, comment=comment)
         # create response and request record
-        return self.request("GET", url, headers)
+        return self.request("GET", url, headers, force=force)
 
     @classmethod
     def set_policy(cls, headers, comment):
