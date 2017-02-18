@@ -2,8 +2,6 @@ import gzip
 
 from lxml import html
 
-from .utility import fake
-
 
 def extract_document_link(content):
     """

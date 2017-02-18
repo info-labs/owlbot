@@ -101,7 +101,7 @@ class Response:
     def links(self):
         if not self.resp.headers["Content-Type"].startswith("text/html"):
             return []
-        return analyzer.extract_document_link(self.resp)
+        return analyzer.extract_document_link(self.content)
 
     @property
     def code(self):
@@ -115,19 +115,21 @@ class Response:
         if "Content-Type" not in self.resp.headers:
             return b""
 
+        text = self.resp.raw.data
+
         if "Content-Encoding" in self.resp.headers:
             encoding = self.resp.headers["Content-Encoding"]
             if encoding not in ["gzip"]:
-                return []
+                return b""
             if encoding == "gzip":
                 try:
                     return gzip.decompress(text)
-                except:
+                except OSError:
                     # unknown decode error
                     return b""
             else:
                 return b""
-        return self.resp.raw.data
+        return text
 
 
 class Archive:
