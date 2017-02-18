@@ -29,9 +29,10 @@ fp = io.BytesIO()
 arc = owlbot.Archvie(filename, fileobj=fp)
 
 # crawl & archive web page
-links = arc.get("http://example.com/")
-for link in links:
-    arc.get(link)
+resp = arc.get("http://example.com/")
+if resp.code == 200:
+    for link in resp.links():
+        arc.get(link)
 
 # compress data
 fp.seek(0)
