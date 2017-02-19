@@ -1,3 +1,4 @@
 git+https://github.com/erroneousboat/warc3
 requests
 dnspython
+lxml
