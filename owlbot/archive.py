@@ -220,7 +220,7 @@ class Archive:
 
         return Response(resp, response, request)
 
-    def get(self, url, headers={}, comment=None, force=False):
+    def get(self, url, headers=None, comment=None, force=False):
         """
         :type url: str
         :type headers: dict of (str, str)
@@ -228,6 +228,8 @@ class Archive:
         :rtype: int, warc.WARCRecord, warc.WARCRecord
         :return: status_code, response, request
         """
+        if headers is None:
+            headers = dict()
         headers = self.set_policy(headers, comment=comment)
         # create response and request record
         return self.request("GET", url, headers, force=force)
