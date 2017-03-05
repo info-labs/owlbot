@@ -31,11 +31,10 @@ def main():
 
 
     fp = BytesIO()
-
-    warcfile = warc.WARCFile(fileobj=fp)
+    arc = owlbot.Archive(filename=args.output, fileobj=fp)
 
     url = args.url.strip()
-    # http
+    # check http
     if not url.startswith("http"):
         print('Abort: Unsupported protocol. "{}"'.format(url))
         return 1
@@ -43,11 +42,9 @@ def main():
 
     print("download: {}".format(url))
     # get
-    code, resp, req = owlbot.get(url)
-    if code != 200:
+    resp = arc.get(url)
+    if resp.code != 200:
         print("Status {}: {}".format(resp.code, url))
-    warcfile.write_record(resp)
-    warcfile.write_record(req)
 
     # write to file
     fp.seek(0)
