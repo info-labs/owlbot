@@ -7,10 +7,10 @@ from . import version
 BASE_DIR = os.path.dirname(__file__)
 
 
+global POLICY
 POLICY = None
 
 def load_policy(path):
-    global POLICY
     POLICY = "".join(open(path).read().strip().split())
 
 path = os.path.join(BASE_DIR, ".OWLBOT_POLICY")
@@ -24,7 +24,6 @@ del path
 
 # overwrite environ
 if "OWLBOT_POLICY" in os.environ:
-    global POLICY
     POLICY = os.environ["OWLBOT_POLICY"]
 
 if POLICY is None:
