@@ -1,12 +1,17 @@
 owlbot
 ======
 
+[![Build Status](https://travis-ci.org/info-labs/owlbot.svg?branch=master)](https://travis-ci.org/info-labs/owlbot)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](http://www.gnu.org/licenses/gpl-3.0)
+
 Archive bot
 
 ### requirements
 
 * [warc3]
 * requests
+* dnspython
+* lxml
 
 [warc3]: https://github.com/erroneousboat/warc3
 

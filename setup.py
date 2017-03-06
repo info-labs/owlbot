@@ -1,8 +1,4 @@
-import os
-
-os.environ["OWLBOT_POLICY"] = "http://example.com/dummy/policy"
-
-from owlbot import __version__, __description__, __license__
+from owlbot.metadata import __version__, __description__, __license__
 
 try:
     from distutils.core import setup, find_packages
@@ -35,6 +31,12 @@ setup(
     url='https://github.com/info-labs/owlbot',
     download_url='https://github.com/info-labs/owlbot/tarball/v%s' % __version__,
     license=__license__,
+    install_requires=[
+        "warc",
+        "requests",
+        "dnspython",
+        "lxml",
+    ],
     include_package_data=True,
     packages=find_packages(),
     zip_safe=False,
