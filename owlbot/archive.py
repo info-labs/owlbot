@@ -14,15 +14,13 @@ except ImportError:
 
 import datetime
 import io
-import gzip
 import uuid
 
 import dns
 import warc
 
-from . import analyzer
-from . import context
 from . import exceptions
+from .response import ResponseWrapper
 from . import robot
 from . import useragent
 from . import version
@@ -35,7 +33,7 @@ HTTP_VERSION = {
 }
 
 
-def make_req_dummy(req, record, date, http_ver="1.1"):
+def make_req_dummy(req, record, http_ver="1.1"):
     o = urlparse(req.url)
     path = o.path
     if not path:
@@ -92,50 +90,16 @@ def make_resp_dummy(resp, date, http_ver="1.1"):
 make_req_record = make_req_dummy
 
 
-class Response:
+class Response(ResponseWrapper):
     def __init__(self, resp, response, request):
-        self.resp = resp
+        super().__init__(resp)
         self.response = response
         self.request = request
 
-    def links(self):
-        if not self.resp.headers["Content-Type"].startswith("text/html"):
-            return []
-        return analyzer.extract_document_link(self.content)
-
-    @property
-    def code(self):
-        return self.resp.status_code
-
-    @property
-    def content(self):
-        if self.resp.status_code != 200:
-            return b""
-
-        if "Content-Type" not in self.resp.headers:
-            return b""
-
-        text = self.resp.raw.data
-
-        if "Content-Encoding" in self.resp.headers:
-            encoding = self.resp.headers["Content-Encoding"]
-            if encoding not in ["gzip"]:
-                return b""
-            if encoding == "gzip":
-                try:
-                    return gzip.decompress(text)
-                except OSError:
-                    # unknown decode error
-                    return b""
-            else:
-                return b""
-        return text
-
 
 class Archive:
-    def __init__(self, filename, fileobj=None, operator=None, botname="owlbot"):
-        self.botname = botname
-        self.ctx = context.Context(self.botname)
+    def __init__(self, filename, fileobj=None, operator=None, botname="owlbot", comment=None):
+        self.robot = robot.Robot(botname, comment)
         self.create(filename, fileobj=fileobj, operator=operator)
 
     def create(self, filename, fileobj=None, operator=None):
@@ -167,17 +131,9 @@ class Archive:
             warc.WARCRecord(header, payload=b"\r\n".join(body))
         )
 
-    def can_fetch(self, url):
-        o = urlparse(url)
-        if not self.ctx.has_robots_txt(o.hostname):
-            robots_url = "http://{}/robots.txt".format(o.hostname)
-            resp = self.get(robots_url, force=True)
-            self.ctx.register_robots_txt(o.hostname, resp.code, resp.content)
-        return self.ctx.can_fetch(url)
-
     def resolve_dns(self, hostname, date):
-        ttl = self.ctx.check_ttl(hostname)
-        cache = self.ctx.resolve_dns(hostname)
+        ttl = self.robot.ctx.check_ttl(hostname)
+        cache = self.robot.ctx.resolve_dns(hostname)
 
         if ttl:
             header = warc.WARCHeader({
@@ -200,50 +156,55 @@ class Archive:
             temp += [x for x in anser.items if x.rdtype == dns.rdatatype.A]
         return str(secrets.choice(temp))
 
-    def request(self, method, url, headers={}, data=None, force=False):
+    def request(self, method, url, headers=None, data=None, force=False):
         now = datetime.datetime.utcnow()
 
         o = urlparse(url)
         ip_addr = self.resolve_dns(o.hostname, date=now)
+        # TODO
 
-        if not force and not self.can_fetch(url):
+        # check robots.txt
+        fetchable = self.robot.can_fetch(url)
+        if fetchable is None:
+            # robots.txt does not registered
+            robots_url = self.robot.create_robots_txt_url(url)
+            if url == robots_url:
+                # force crawl
+                fetchable = True
+            else:
+                # crawl robotx.txt
+                resp = self.get(robots_url, force=True)
+                # register robots.txt
+                hostname = o.hostname
+                code = resp.code
+                content = resp.content
+                self.robot.register_robots_txt(hostname, code, content)
+                # check again
+                fetchable = self.robot.can_fetch(url)
+
+        if not fetchable:
             raise exceptions.RobotstxtDisallowed()
 
+        if headers is None:
+            headers = dict()
+
         # TODO: request with ip_addr
-        resp = robot.request(method, url, headers, data)
+        resp = self.robot.request(method, url, headers, data)
         ver = HTTP_VERSION[resp.raw.version]
         response = make_resp_dummy(resp, date=now, http_ver=ver)
-        request = make_req_dummy(resp.request, response, date=now, http_ver=ver)
+        request = make_req_dummy(resp.request, response, http_ver=ver)
 
         self.warc.write_record(response)
         self.warc.write_record(request)
 
         return Response(resp, response, request)
 
-    def get(self, url, headers=None, comment=None, force=False):
+    def get(self, url, headers=None, force=False):
         """
         :type url: str
         :type headers: dict of (str, str)
-        :type comment: str
         :rtype: int, warc.WARCRecord, warc.WARCRecord
         :return: status_code, response, request
         """
-        if headers is None:
-            headers = dict()
-        headers = self.set_policy(headers, comment=comment)
         # create response and request record
         return self.request("GET", url, headers, force=force)
-
-    @classmethod
-    def set_policy(cls, headers, comment):
-        """
-        set policy URL if not set
-        :type headers: dict of (str, str)
-        """
-        if "user-agent" not in set(x.lower() for x in headers.keys()):
-            if comment is None:
-                ua = useragent.UA_DEFAULT
-            else:
-                ua = useragent.UA_BASE.format(comment=" "+comment)
-            headers["User-Agent"] = ua
-        return headers

@@ -5,7 +5,7 @@ defined elsewhere, we don't need to test them exhaustively.
 """
 
 
-from owlbot.pep506 import secrets
+from ..pep506 import secrets
 import unittest
 import string
 

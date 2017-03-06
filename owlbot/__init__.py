@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from .archive import Archive
+from .robot import Robot
 from . import version
 
 

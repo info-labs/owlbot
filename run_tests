@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+OWLBOT_POLICY=http://example.com pytest $*
