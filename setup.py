@@ -32,7 +32,7 @@ setup(
     download_url='https://github.com/info-labs/owlbot/tarball/v%s' % __version__,
     license=__license__,
     install_requires=[
-        "warc",
+        #"warc",  # use https://github.com/erroneousboat/warc3
         "requests",
         "dnspython",
         "lxml",

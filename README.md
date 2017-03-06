@@ -26,12 +26,12 @@ os.environ["OWLBOT_POLICY"] = policy
 import io
 import gzip
 import shutil
-import owlbot
+from owlbot.archive import Archive
 
 # create WARCFile
 filename = "example.warc.gz"
 fp = io.BytesIO()
-arc = owlbot.Archvie(filename, fileobj=fp)
+arc = Archvie(filename, fileobj=fp)
 
 # crawl & archive web page
 resp = arc.get("http://example.com/")
