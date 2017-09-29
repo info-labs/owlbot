@@ -18,7 +18,7 @@ def extract_document_link(url, content):
         return []
 
     dom = html.fromstring(content)
-    link_hrefs = dom.xpath("//link/@href")
+    link_hrefs = dom.xpath("//link[@rel='stylesheet']/@href") + dom.xpath("//link[@rel='preload']/@href")
     script_srcs = dom.xpath("//script/@src")
     img_srcs = dom.xpath("//img/@src")
     return resolve_document_links(url,
@@ -27,14 +27,17 @@ def extract_document_link(url, content):
 
 
 def resolve_document_links(url, paths):
-    o = urlparse(url)
+    o1 = urlparse(url)
     result = []
     for path in paths:
+        if path.startswith("http://") or path.startswith("https://"):
+            result.append(path)
+            continue
         if path.startswith("//") and not path.startswith("///"):
-            result.append(o.scheme + ":" + os.path.normpath(path))
+            result.append(o1.scheme + ":" + os.path.normpath(path))
         else:
-            path = resolve_path(o.path, path)
-            result.append(o.scheme + "://" + o.netloc + path)
+            path = resolve_path(o1.path, path)
+            result.append(o1.scheme + "://" + o1.netloc + path)
     return result
 
 
