@@ -7,11 +7,6 @@ try:
 except ImportError:
     from httplib import responses as RESPONSES
 
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    from urlparse import urlparse
-
 import datetime
 import io
 import uuid
@@ -25,6 +20,7 @@ from . import robot
 from . import useragent
 from . import version
 from .pep506 import secrets
+from .utility.url import urlparse
 
 
 HTTP_VERSION = {

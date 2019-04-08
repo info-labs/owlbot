@@ -24,6 +24,10 @@ class ResponseWrapper:
         return o.hostname
 
     @property
+    def url(self):
+        return self.resp.url
+
+    @property
     def code(self):
         return self.resp.status_code
 
