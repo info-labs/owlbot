@@ -35,6 +35,9 @@ class CrawlRule:
         return False
 
     def extract_links(self, resp):
+        content_type = resp.content_type
+        if not content_type.startswith("text/html") and not content_type.startswith("application/xhtml"):
+            return
         # required
         for link in analyzer.extract_document_link(resp.url, resp.content):
             if not self.test(link):

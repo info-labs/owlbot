@@ -32,6 +32,10 @@ class ResponseWrapper:
         return self.resp.status_code
 
     @property
+    def content_type(self):
+        return self.resp.headers["Content-Type"]
+
+    @property
     def content(self):
         if self.resp.status_code != 200:
             return b""

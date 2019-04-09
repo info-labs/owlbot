@@ -12,7 +12,7 @@ def extract_document_link(url, content):
     :type content: str
     :rtype: list of str
     """
-    if not content:
+    if not content or not content.strip():
         return []
 
     dom = html.fromstring(content)
@@ -30,7 +30,7 @@ def extract_follow_link(url, content):
     :type content: str
     :rtype: list of str
     """
-    if not content:
+    if not content or not content.strip():
         return []
 
     dom = html.fromstring(content)
