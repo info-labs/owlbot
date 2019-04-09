@@ -64,6 +64,8 @@ def resolve_document_links(url, paths):
 def resolve_path(path1, path2):
     path1 = path1.strip()
     path2 = path2.strip()
+    if "#" in path2:
+        path2 = path2.split("#")[0]
     if path2.startswith("/"):
         path = os.path.normpath(path2)
         if path.startswith("//"):
